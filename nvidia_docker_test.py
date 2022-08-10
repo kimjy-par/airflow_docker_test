@@ -1,3 +1,4 @@
+import docker
 from datetime import datetime, timedelta
 from textwrap import dedent
 
@@ -7,7 +8,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.docker_operator import DockerOperator
 
 with DAG(
-    'simple_docker_test',
+    'nvidia_docker_test',
     default_args={
         'depends_on_past': False,
         'email': ['kimjy.par@gmail.com'],
@@ -28,7 +29,7 @@ with DAG(
     )
  
     t1 = DockerOperator(
-        task_id='docker_test',
+        task_id='simple_docker_test',
         image='ubuntu:18.04',
         api_version='auto',
         auto_remove=True,
@@ -37,4 +38,17 @@ with DAG(
         network_mode='bridge'
     )
 
-    t0>>t1
+    t2 = DockerOperator(
+        task_id='nvidia_docker_test',
+        image='ubuntu:18.04',
+        api_version='auto',
+        auto_remove=True,
+        command='nvidia-smi',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        device_requests=[
+            docker.types.DeviceRequest(device_ids=["0"], capabilities=[['gpu']])
+        ]
+    )
+
+    t0>>t1>>t2
